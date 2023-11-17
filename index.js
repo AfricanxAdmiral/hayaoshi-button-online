@@ -3,13 +3,11 @@ const Rooms = require('./Session/Rooms');
 const app = express();
 const http = require('http').Server(app);
 const io = require('socket.io')(http);
-const Passwords = require('./Session/Passwords');
 const getStore = require('./Store/Store');
 
 app.use(express.static('static'));
 
 const rooms = new Rooms(io);
-const pass = new Passwords();
 
 app.use((req, res, next) => {
     res.header("Access-Control-Allow-Origin", "*");
@@ -17,27 +15,12 @@ app.use((req, res, next) => {
     next();
 });
 
-app.get('/createPassword', (req, res) => {
-    const sessionId = req.query.sessionId;
-    const password = pass.createPassword(sessionId);
-    res.json({ password });
-});
+const isResetButtonMasterOnly = false;
+const isSoundButtonMasterOnly = false;
+const isSimpleBackground = true;
+const roomId = rooms.createNewRoom({ isResetButtonMasterOnly, isSoundButtonMasterOnly, isSimpleBackground });
 
-app.get('/getSessionIdFromPassword', (req, res) => {
-    const password = req.query.pass;
-    const sessionId = pass.getSessionId(password);
-    if (sessionId) {
-        res.json({ sessionId });
-    } else {
-        res.json({ sessionId: false });
-    }
-});
-
-app.get('/createNewRoom', (req, res) => {
-    const isResetButtonMasterOnly = req.query.isResetButtonMasterOnly === 'true';
-    const isSoundButtonMasterOnly = req.query.isSoundButtonMasterOnly === 'true';
-    const isSimpleBackground = req.query.isSimpleBackground === 'true';
-    const roomId = rooms.createNewRoom({ isResetButtonMasterOnly, isSoundButtonMasterOnly, isSimpleBackground });
+app.get('/', (req, res) => {
     res.redirect(`/session.html?sessionId=${roomId}`);
 });
 
@@ -51,7 +34,7 @@ app.get('/analytics', (req, res) => {
     });
 });
 
-const SERVER_PORT = 80;
+const SERVER_PORT = 3000;
 
 http.listen(SERVER_PORT);
 console.log('Server listening on ' + SERVER_PORT);

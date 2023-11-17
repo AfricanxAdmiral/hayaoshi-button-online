@@ -3,6 +3,7 @@ const getStore = require('../Store/Store');
 
 module.exports = class Session {
     constructor(ioRoom, options) {
+        console.log('Creating new session ...');
         this.hayaoshi = new Hayaoshi();
         this.masterId = null;
         this.isResetButtonMasterOnly = options.isResetButtonMasterOnly ?? false;
@@ -15,10 +16,12 @@ module.exports = class Session {
 
     connection(socket) {
         socket.use(packet => {
+            console.log(packet);
             const apiName = packet[0];
 
             if (apiName === 'editingName' && !this.masterId) {
                 // 一番最初にコネクション張った人はマスター
+                console.log(`this.masterId: ${this.masterId}, socket.id: ${socket.id}`);
                 this.masterId = socket.id;
             }
 
@@ -37,9 +40,19 @@ module.exports = class Session {
             if (apiName === 'playSound') {
                 this.emitPlaySound(socket, packet[1]);
             }
+
+            if (apiName === 'pushCorrectButton') {
+                this.correctButton(socket);
+            }
+
+            if (apiName === 'pushWrongButton') {
+                this.wrongButton(socket);
+            }
         })
 
         socket.on('disconnect', () => {
+            this.emitDisconnect(socket)
+
             if (socket.id === this.masterId) {
                 // ルームマスターが切断された
                 if (this.isResetButtonMasterOnly) {
@@ -63,10 +76,21 @@ module.exports = class Session {
     pushButton(socket) {
         if (this.hayaoshi.isPlayerIdExist(socket.id)) {
             const pushedPlayerDetail = this.hayaoshi.buttonPushed(socket.id);
+            console.log(`pushButton pushedPlayerDetail: ${JSON.stringify(pushedPlayerDetail)}`)
             this.emitButtonPushed(socket, pushedPlayerDetail);
             const store = getStore();
             store.countPush();
         }
+    }
+
+    correctButton(socket) {
+        this.hayaoshi.correctButtonPushed();
+    }
+
+    wrongButton(socket) {
+        const pushedPlayerDetail = this.hayaoshi.wrongButtonPushed();
+        console.log(`emitWrongButton pushedPlayerDetail: ${JSON.stringify(pushedPlayerDetail)}`)
+        this.emitWrongButtonPushed(socket, pushedPlayerDetail);
     }
 
     reset(socket) {
@@ -90,8 +114,18 @@ module.exports = class Session {
         this.room.emit('buttonPushed', playerDetail);
     }
 
+    emitWrongButtonPushed(socket, playerDetail) {
+        this.room.emit('wrongButtonPushed', playerDetail);
+    }
+
     emitReset() {
         this.room.emit('reset');
+    }
+
+    emitDisconnect(socket) {
+        if (this.hayaoshi.isPlayerIdExist(socket.id)) {
+            this.hayaoshi.playerDisconnect(socket.id);
+        }
     }
 
     emitPlaySound(socket, soundUrl) {

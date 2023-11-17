@@ -6,7 +6,8 @@ module.exports = class Hayaoshi {
     }
 
     joinPlayers(id, name, isMaster) {
-        this.players.push(new Player(id, name, isMaster));
+        console.log(`Player id: ${id} / name: ${name} / isMaster: ${isMaster} joining ...`);
+        this.players.push(new Player(id, name, this.players.length+1, isMaster));
     }
 
     buttonPushed(pushedPlayerId) {
@@ -28,6 +29,26 @@ module.exports = class Hayaoshi {
             }).map(p => p.createPlayerDetails());
     }
 
+    correctButtonPushed() {
+        const currentPlayer = this.players.find(p => p.pushedRank === 0);
+        if (currentPlayer) {
+            currentPlayer.scorePoint();
+        }
+    }
+
+    wrongButtonPushed() {
+        this.players.map(p => p.wrongButtonPushed())
+        
+        return this.players
+            .filter(p => p.pushedRank !== null)
+            .sort((a, b) => {
+                if (a.pushedRank === b.pushedRank) return 0;
+                if (a.pushedRank === null) return -1;
+                if (b.pushedRank === null) return 1;
+                return a.pushedRank - b.pushedRank;
+            }).map(p => p.createPlayerDetails());
+    }
+
     isPlayerIdExist(id) {
         return this.players.some(p => p.id === id);
     }
@@ -38,6 +59,10 @@ module.exports = class Hayaoshi {
 
     resetPlayers() {
         this.players.forEach(p => p.reset());
+    }
+
+    playerDisconnect(pushedPlayerId) {
+        this.players = this.players.filter(p => p.id !== pushedPlayerId)
     }
 
     createPlayerDetails() {

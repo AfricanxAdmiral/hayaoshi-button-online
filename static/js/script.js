@@ -1,5 +1,5 @@
 const store = {
-    isMute: true,
+    isMute: false,
     audioInstance: null,
     isButtonEnabled: false,
     isActiveResetButton: true,
@@ -44,15 +44,6 @@ const joinButton = document.getElementById('join');
 const pushButton = document.getElementById('push');
 const resetButton = document.getElementById('reset');
 const displayPushedPlayers = document.getElementById('displayPushedPlayers');
-const shareButton = document.getElementById('shareButton');
-
-const initShareButtonText = () => {
-    if (navigator.share) {
-        shareButton.children[0].textContent = 'URLを共有する';
-    } else {
-        shareButton.children[0].textContent = 'URLをコピーする';
-    }
-}
 
 const enableButton = (bool) => {
     store.isButtonEnabled = bool;
@@ -65,6 +56,8 @@ const soundButtons = [
     [document.getElementById('sound_pinpon'), '/sound/pinpon.wav'],
     [document.getElementById('sound_boboo'), '/sound/boboo.wav']
 ];
+const correctButton = document.getElementById('sound_pinpon');
+const wrongButton = document.getElementById('sound_boboo');
 
 socket.on('sessionStatus', ({ players, isResetButtonMasterOnly, isSoundButtonMasterOnly, isSimpleBackground }) => {
     const ownData = players.find(p => p.id === socket.id);
@@ -100,15 +93,73 @@ socket.on('sessionStatus', ({ players, isResetButtonMasterOnly, isSoundButtonMas
         document.getElementById('playGame').style.display = "flex";
         [joinButton, playerNameInput].forEach(e => e.disabled = true);
     }
+
+    // Draw the Score Table
+    console.log(`sessionStatus players: ${JSON.stringify(players)}`)
+    
+    const table = document.getElementById("scoreTable");
+    let newTbody = document.createElement('tbody')
+
+    // The First Row with Title
+    let row = newTbody.insertRow(-1);
+    const id = document.createElement('th');
+    const name = document.createElement('th');
+    const score = document.createElement('th');
+    id.setAttribute('width', '10%')
+    score.setAttribute('width', '20%')
+    name.innerText = "Name"
+    score.innerText = "Score"
+    let c1 = row.appendChild(id);
+    let c2 = row.appendChild(name);
+    let c3 = row.appendChild(score);
+
+    // create and populate new rows by looping through database query results
+    players.map(player => {
+        let row = newTbody.insertRow(-1); // We are adding at the end
+        row.id = `player_${player.joinedRank}`
+
+        // Create table cells
+        const id = document.createElement('th');
+        id.innerText = player.joinedRank
+        let c1 = row.appendChild(id);
+        let c2 = row.insertCell(1).appendChild(document.createTextNode(player.name));
+        let c3 = row.insertCell(2).appendChild(document.createTextNode(player.score));
+    });
+    
+    // replace existing placeholder tbody with the populated one
+    table.replaceChild(newTbody, table.tBodies[0])
 });
 
-soundButtons.forEach(([element, url]) => {
-    element.addEventListener('click', () => {
-        if (store.isActiveSoundButton) {
-            socket.emit('playSound', url);
-        }
-    })
-})
+// soundButtons.forEach(([element, url]) => {
+//     element.addEventListener('click', () => {
+//         if (store.isActiveSoundButton) {
+//             socket.emit('playSound', url);
+//         }
+//     })
+// })
+const correctButtonPushed = () => {
+    socket.emit('pushCorrectButton');
+
+    if (store.isActiveSoundButton) {
+        socket.emit('playSound', '/sound/pinpon.wav');
+    }
+    
+    // Someone get the correct answer so move to the next question
+    if (store.isActiveResetButton) {
+        socket.emit('reset');
+    }
+}
+
+const wrongButtonPushed = () => {
+    socket.emit('pushWrongButton');
+
+    if (store.isActiveSoundButton) {
+        socket.emit('playSound', '/sound/boboo.wav');
+    }
+}
+
+correctButton.addEventListener('click', correctButtonPushed)
+wrongButton.addEventListener('click', wrongButtonPushed)
 
 socket.on('playSound', (soundUrl) => {
     if (store.audioInstance) {
@@ -136,6 +187,23 @@ socket.on('buttonPushed', (players) => {
         store.audioInstance.play();
     }
 
+    const texts = players
+        .filter(player => player.pushedRank !== null)
+        .map(player => {
+            if (player.id === socket.id) {
+                enableButton(false);
+            }
+            const elm = document.createElement('p');
+            elm.className = 'displayPushedPlayerName';
+            elm.textContent = `${player.pushedRank+1}. ${player.name}`;
+            return elm;
+        });
+
+    displayPushedPlayers.innerHTML = '';
+    displayPushedPlayers.append(...texts);
+});
+
+socket.on('wrongButtonPushed', (players) => {
     const texts = players
         .filter(player => player.pushedRank !== null)
         .map(player => {
@@ -185,39 +253,8 @@ const resetButtonPushed = () => {
 pushButton.addEventListener('click', tryPushButton)
 resetButton.addEventListener('click', resetButtonPushed)
 
-const setShareModalPassword = (number) => {
-    const passDiv = document.getElementById('showPasswords');
-    passDiv.innerHTML = number.split('').map(e => `<p>${e}</p>`).join('');
-}
-
-const modalDiv = document.getElementById('shareModal');
-document.getElementById('openShareModal').addEventListener('click', () => {
-    modalDiv.className = 'shareModal shareModal--on';
-    initShareButtonText();
-    setShareModalPassword('----');
-    fetch(`/createPassword?sessionId=${getSessionId()}`)
-        .then(r => r.json())
-        .then(({ password }) => setShareModalPassword(password));
-});
-
-document.getElementById('closeShareModal').addEventListener('click', () => {
-    modalDiv.className = 'shareModal shareModal--off';
-});
-
-shareButton.addEventListener('click', () => {
-    if (navigator.share) {
-        navigator.share({
-            title: '早押しボタンオンライン',
-            text: '一緒に早押しボタンで遊びませんか？',
-            url: location.href,
-        })
-    } else {
-        execCopy(location.href);
-        shareButton.children[0].textContent = 'コピーしました！'
-    }
-});
-
 document.getElementById('volume_button').addEventListener('click', () => {
+    console.log('click volumn button.')
     const muteIconClass = 'fas fa-volume-mute';
     const unmuteIconClass = 'fas fa-volume-up';
     store.isMute = !store.isMute;
@@ -236,20 +273,6 @@ const simpleBackgroundList = [
     '#008000',
 ];
 
-let backgroundIndex = 0;
-document.getElementById('image_button').addEventListener('click', () => {
-    if (store.isSimpleBackground) {
-        backgroundIndex += 1;
-        if (backgroundIndex > simpleBackgroundList.length) {
-            backgroundIndex = 0;
-        }
-
-        document.body.style.backgroundColor = simpleBackgroundList[backgroundIndex];
-    } else {
-        document.body.style.backgroundImage = `url("https://source.unsplash.com/random?q=${Math.random()}")`;
-    }
-});
-
 document.addEventListener('keydown', ({ code }) => {
     if (code === 'Space' || code === 'Enter') tryPushButton();
     if (code === 'Backspace' || code === 'Delete') resetButtonPushed();
@@ -267,6 +290,7 @@ document.addEventListener('onbeforeunload', () => {
 })
 
 const init = () => {
+    console.log('Script.js init()');
     socket.emit('editingName');
 }
 

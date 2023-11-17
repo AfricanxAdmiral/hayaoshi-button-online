@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html lang="ja">
+<!-- <html lang="ja"> -->
+<html>
 <head>
     <script src="js/socket.io.min.js"></script>
     <script type="module" src="js/script.js"></script>
@@ -7,15 +8,14 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <link rel="stylesheet" href="style/session.css">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no">
-    <meta property="og:url" content="https://btn.anyfrog.net/session.html" />
+    <!-- <meta property="og:url" content="https://btn.anyfrog.net/session.html" /> -->
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="早押しボタンオンライン" />
-    <meta property="og:description" content="ブラウザだけで遊べる早押しボタンウェブアプリ" />
-    <meta property="og:site_name" content="btn.anyfrog.net" />
+    <meta property="og:title" content="パクった早押しボタン" />
+    <meta property="og:description" content="Stolen hayaoshi button." />
     <meta property="og:image" content="https://btn.anyfrog.net/ogpimage.png" />
     <meta property="og:image:width" content="370" />
     <meta property="og:image:height" content="370" />
-    <title>早押しボタンオンライン</title>
+    <title>パクった早押しボタン</title>
 </head>
 <body>
 <div id="main">
@@ -32,39 +32,6 @@
             </div>
         </div>
     </div>
-    <div id="shareModal" class="shareModal shareModal--off">
-        <div class="shareModal__content">
-            <p class="shareModal__description">
-                URL・パスワードを共有して友達と一緒に早押しボタンで遊ぼう！
-            </p>
-            <div class="shareModal__type">
-                <div id="shareButton" class="shareModal__shareButton">
-                    <p>URLを共有する</p>
-                </div>
-            </div>
-            <p class="shareModal__separate">もしくは</p>
-            <div class="shareModal__type">
-                <p class="shareModal__typeHeader">
-                    パスワードを教える
-                </p>
-                <div id="showPasswords" class="shareModal__showPassword">
-                    <p>-</p>
-                    <p>-</p>
-                    <p>-</p>
-                    <p>-</p>
-                </div>
-                <p class="shareModal__passDescription">
-                    トップページから四桁の番号で入室できます
-                </p>
-                <p class="shareModal__passDescription">
-                    パスワードの有効期限はこの画面を開いてから15分間です
-                </p>
-            </div>
-            <div id="closeShareModal" class="shareModal__close">
-                とじる
-            </div>
-        </div>
-    </div>
     <div id="playGame">
         <div class="btnArea">
             <a href="#" id="push" class="btn-circle-3d btn-circle-3d--shadow pushable">押</a>
@@ -75,21 +42,19 @@
         <button id="sound_boboo" class="btn-square-pop btn-square-pop--shadow btn-square-pop--boboo">ブブーッ</button>
         <div class="controllers">
             <div class="controllers__item">
-                <button id="openShareModal" class="controllers__button controllers__button--shadow">
-                    <i class="fas fa-share-alt"></i>
-                </button>
-            </div>
-            <div class="controllers__item">
                 <button id="volume_button" class="controllers__button controllers__button--shadow">
                     <i id="volume_button_icon" class="fas fa-volume-mute"></i>
                 </button>
             </div>
-            <div class="controllers__item">
-                <button id="image_button" class="controllers__button controllers__button--shadow">
-                    <i class="far fa-images"></i>
-                </button>
-            </div>
         </div>
+        <table id="scoreTable" style="width:40%">
+            <tr>
+                <th style="width:20%"></th>
+                <th>Name</th>
+                <th>Score</th>
+            </tr>
+        </table>
+        <br>
         <div id="displayPushedPlayers" class="displayPushedPlayers"></div>
     </div>
 </div>
